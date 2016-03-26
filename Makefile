@@ -13,7 +13,7 @@ LD := $(CC)
 
 all: poisson
 
-poisson: $(BUILDDIR)/alloc.o $(BUILDDIR)/poisson.o 
+poisson: $(BUILDDIR)/alloc.o $(BUILDDIR)/simulation.o $(BUILDDIR)/poisson.o 
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 $(BUILDDIR)/%.o : $(SRCDIR)/%.c
