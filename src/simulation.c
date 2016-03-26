@@ -25,13 +25,17 @@ double magnitude_squared(double x1, double y1, double x2, double y2) {
     return((xret*xret)+(yret*yret));
 }
 
-/*===========================================================================*/
-/* FUNCTION TO CALCULATE THE CORRECT CHARGE DENSITY RHO FOR A GIVEN VECTOR R */
-/*===========================================================================*/
-double rho_val(double x, double y) {
-    double ret = kappa_div_pi * ( exp(-kappa*magnitude_squared(x,y,xpos,ypos)) 
-                                    - exp(-kappa*magnitude_squared(x,y,xneg,yneg)) );
-    return(ret);
+
+/*=============================================================*/
+/* FUNCTION TO CALCULATE THE CHARGE DENSITY FOR A GIVEN DOMAIN */
+/*=============================================================*/
+void calc_density(double **rho, double h, int N) {
+    for (int i=0;i<N;i++) {
+        for (int j=0;j<N;j++) {
+            rho[i][j] = kappa_div_pi * ( exp(-kappa*magnitude_squared(h*i,h*j,xpos,ypos)) 
+                                    - exp(-kappa*magnitude_squared(h*i,h*j,xneg,yneg)) );
+        }
+    }
 }
 
 /*=============================================================*/
@@ -62,49 +66,51 @@ double get_max(double **a, double **b, int Nx, int Ny) {
 /*=======================================================*/
 /* ITERATIVE POISSON FUNCTION TO CALCULATE THE POTENTIAL */
 /*=======================================================*/
-void poisson(double **phi, double **phi_new, double **phi_swap, double h, int N) {
+void poisson(double **phi, double **phi_new, double **rho, double h, int N) {
     int i,j,iter;
     double max_norm;
     int iter_max = 1e05;
+    double hsq = h*h;
+    double **phi_swap;
 
     for(iter=0; iter<iter_max; iter++) {
         for (i=0;i<N;i++) {
             for (j=0;j<N;j++) {
                 /* the normal case when at no boundary */
                 if (i!=0 && i!=N-1 && j!=0 && j!=N-1) {
-                    phi_new[i][j] = 0.25*(phi[i+1][j] + phi[i-1][j] + phi[i][j+1] + phi[i][j-1] - h*h*rho_val(h*i, h*j));
+                    phi_new[i][j] = 0.25*(phi[i+1][j] + phi[i-1][j] + phi[i][j+1] + phi[i][j-1] - hsq*rho[i][j]);
                 }
                 /* when at left-top corner */
                 else if (i==0 && j==0) {
-                    phi_new[i][j] = 0.25*(phi[i+1][j] + phi[i-1+N][j] + phi[i][j+1] + phi[i][j-1+N] - h*h*rho_val(h*i, h*j));
+                    phi_new[i][j] = 0.25*(phi[i+1][j] + phi[i-1+N][j] + phi[i][j+1] + phi[i][j-1+N] - hsq*rho[i][j]);
                 }
                 /* when at left but not at top or bottom boundary */
                 else if (i==0 && j!=0 && j!=N-1) {
-                    phi_new[i][j] = 0.25*(phi[i+1][j] + phi[i-1+N][j] + phi[i][j+1] + phi[i][j-1] - h*h*rho_val(h*i, h*j)); 
+                    phi_new[i][j] = 0.25*(phi[i+1][j] + phi[i-1+N][j] + phi[i][j+1] + phi[i][j-1] - hsq*rho[i][j]); 
                 }
                 /* when at top but not at left or right boundary */
                 else if (i!=0 && j==0 && i!=N-1) {
-                    phi_new[i][j] = 0.25*(phi[i+1][j] + phi[i-1][j] + phi[i][j+1] + phi[i][j-1+N] - h*h*rho_val(h*i, h*j));
+                    phi_new[i][j] = 0.25*(phi[i+1][j] + phi[i-1][j] + phi[i][j+1] + phi[i][j-1+N] - hsq*rho[i][j]);
                 }
                 /* when at right-bottom corner */
                 else if (i==N-1 && j==N-1) {
-                    phi_new[i][j] = 0.25*(phi[i+1-N][j] + phi[i-1][j] + phi[i][j+1-N] + phi[i][j-1] - h*h*rho_val(h*i, h*j));
+                    phi_new[i][j] = 0.25*(phi[i+1-N][j] + phi[i-1][j] + phi[i][j+1-N] + phi[i][j-1] - hsq*rho[i][j]);
                 }
                 /* when at right but not at top or bottom boundary */
                 else if (i==N-1 && j!=N-1 && j!=0) {
-                    phi_new[i][j] = 0.25*(phi[i+1-N][j] + phi[i-1][j] + phi[i][j+1] + phi[i][j-1] - h*h*rho_val(h*i, h*j));
+                    phi_new[i][j] = 0.25*(phi[i+1-N][j] + phi[i-1][j] + phi[i][j+1] + phi[i][j-1] - hsq*rho[i][j]);
                 }
                 /* when at bottom but not at left or rigth boundary */
                 else if (i!=N-1 && j==N-1 && i!=0) {
-                    phi_new[i][j] = 0.25*(phi[i+1][j] + phi[i-1][j] + phi[i][j+1-N] + phi[i][j-1] - h*h*rho_val(h*i, h*j));
+                    phi_new[i][j] = 0.25*(phi[i+1][j] + phi[i-1][j] + phi[i][j+1-N] + phi[i][j-1] - hsq*rho[i][j]);
                 }
                 /* when at right-top corner */
                 else if (i==N-1 && j==0) {
-                    phi_new[i][j] = 0.25*(phi[i+1-N][j] + phi[i-1][j] + phi[i][j+1] + phi[i][j-1+N] - h*h*rho_val(h*i, h*j));
+                    phi_new[i][j] = 0.25*(phi[i+1-N][j] + phi[i-1][j] + phi[i][j+1] + phi[i][j-1+N] - hsq*rho[i][j]);
                 }
                 /* when at left-bottom corner */
                 else if (i==N-1 && j==0) {
-                    phi_new[i][j] = 0.25*(phi[i+1][j] + phi[i-1+N][j] + phi[i][j+1-N] + phi[i][j-1] - h*h*rho_val(h*i, h*j));
+                    phi_new[i][j] = 0.25*(phi[i+1][j] + phi[i-1+N][j] + phi[i][j+1-N] + phi[i][j-1] - hsq*rho[i][j]);
                 }
 
             }
@@ -121,6 +127,64 @@ void poisson(double **phi, double **phi_new, double **phi_swap, double h, int N)
         phi = phi_new;
         phi_new = phi_swap;
     } /*end iter*/
+}
+
+
+
+/*=========================================================================*/
+/* FUNCTION TO CALCULATE THE FIELD COMPONENTS Ex and Ey FOR A GIVEN DOMAIN */
+/*=========================================================================*/
+void calc_field(double **Ex, double **Ey, double **phi, double h, int N) {
+    const double div2h = 1.0/(2*h);
+    for (int i=0;i<N;i++) {
+        for (int j=0;j<N;j++) {
+            // normal case, inner points
+            if (i!=0 && i!=N-1 && j!=0 && j!=N-1) {
+                Ex[i][j] = (phi[i+1][j]-phi[i-1][j])*div2h;
+                Ey[i][j] = (phi[i][j+1]-phi[i][j-1])*div2h;
+            }
+            /* when at top-left corner */
+            else if (i==0 && j==0) {
+                Ex[i][j] = (phi[i+1][j]-phi[i-1+N][j])*div2h;
+                Ey[i][j] = (phi[i][j+1]-phi[i][j-1+N])*div2h;
+            }
+            /* when at top-right corner */
+            else if (i==N-1 && j==0) {
+                Ex[i][j] = (phi[i+1-N][j]-phi[i-1][j])*div2h;
+                Ey[i][j] = (phi[i][j+1]-phi[i][j-1+N])*div2h;
+            }
+            /* when at bottom-left corner */
+            else if (i==0 && j==N-1) {
+                Ex[i][j] = (phi[i+1][j]-phi[i-1+N][j])*div2h;
+                Ey[i][j] = (phi[i][j+1-N]-phi[i][j-1])*div2h;
+            }
+            /* when at bottom-right corner */
+            else if (i==N-1 && j==N-1) {
+                Ex[i][j] = (phi[i+1-N][j]-phi[i-1][j])*div2h;
+                Ey[i][j] = (phi[i][j+1-N]-phi[i][j-1])*div2h;
+            }
+            /* when at left boundary but not top/bottom corner */
+            else if (i==0 && j!=0 && j!=N-1) {
+                Ex[i][j] = (phi[i+1][j]-phi[i-1+N][j])*div2h;
+                Ey[i][j] = (phi[i][j+1]-phi[i][j-1])*div2h;
+            }
+            /* when at right boundary but not top/bottom corner */
+            else if (i==N-1 && j!=0 && j!=N-1) {
+                Ex[i][j] = (phi[i+1-N][j]-phi[i-1][j])*div2h;
+                Ey[i][j] = (phi[i][j+1]-phi[i][j-1])*div2h;
+            }
+            /* when at top boundary but not left/right corner */
+            else if (j==0 && i!=0 && i!=N-1) {
+                Ex[i][j] = (phi[i+1][j]-phi[i-1][j])*div2h;
+                Ey[i][j] = (phi[i][j+1]-phi[i][j-1+N])*div2h;
+            }
+            /* when at bottom boundary but not left/right corner */
+            else if (j==N-1 && i!=0 && i!=N-1) {
+                Ex[i][j] = (phi[i+1][j]-phi[i-1][j])*div2h;
+                Ey[i][j] = (phi[i][j+1-N]-phi[i][j-1])*div2h;
+            }
+        }
+    }
 }
 
 
