@@ -1,10 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-/* Allocate memory for a rows*cols array of floats.
- * The elements within a column are contiguous in memory, and columns
- * themselves are also contiguous in memory.
- */
+/*========================================================*/
+/* Allocate memory for a rows*cols array of floats.       */
+/* The elements within a column are contiguous in memory, */ 
+/* and columns themselves are also contiguous in memory.  */
+/*========================================================*/
 double **alloc_doublematrix(int cols, int rows)
 {
     int i;
@@ -22,8 +23,9 @@ double **alloc_doublematrix(int cols, int rows)
     return m;
 } 
 
-
-/* Free the memory of a matrix allocated with alloc_doublematrix*/
+/*===============================================================*/
+/* Free the memory of a matrix allocated with alloc_doublematrix */
+/*===============================================================*/
 void free_matrix(void *m)
 {
     void **els = (void **) m;
@@ -31,10 +33,11 @@ void free_matrix(void *m)
     free(m);        /* Deallocate the block of column pointers */
 }
 
-
-// Function to print out an array
+/*===================================*/
+/* Function to print out a 2D matrix */
+/*===================================*/
 void print_matrix(double **data, int imax, int jmax, char *str) {    
-    printf("-- %s --\n", str);
+    printf("#-- %s --#\n", str);
     for (int i=0; i<imax; i++) {
         for (int j=0; j<jmax; j++) {
             printf("%f ", data[i][j]);
