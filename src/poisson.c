@@ -1,9 +1,13 @@
 #include <stdio.h>
+#include <mpi.h>
 #include "alloc.h"
 #include "simulation.h"
 
+int proc;                   /* rank of the current process */
+int nprocs;                 /* total number of processes */
+int *ileft, *iright;        /* pointers for the boundariy values */
 
-int main(int argc, char const *argv[])
+int main(int argc, char **argv)
 {
     /* VARIBALES */
     int N = 51;                 // number of cells
@@ -14,12 +18,61 @@ int main(int argc, char const *argv[])
     /* Create data arrays */
     double **phi, **phi_new, **rho, **Ex, **Ey;
 
+    /*===================================================*/
+    /* ADDED VARIABLES FOR MPI */
+    int ncols;          /* The number of coulmns */
+    int rem;            /* remainder of integer division imax/nprocs */
+    int lpoint = 0;     /* stores the left column index for each proc*/
+    int rpoint = 0;     /* stores the right column index for each proc*/
+    double t1, t2;
+
+    /* Initialization of pointers ileft and iright */
+    ileft = &lpoint;
+    iright = &rpoint; 
+
+    /*===================================================*/
+    /* INIT MPI*/
+    /*===================================================*/
+    MPI_Init( &argc, &argv );
+    MPI_Comm_rank( MPI_COMM_WORLD, &proc );
+    MPI_Comm_size( MPI_COMM_WORLD, &nprocs );
+    t1 = MPI_Wtime(); // start the 
+    /*===================================================*/
+
+
+
     /* ALLOCATE MEMORY (it's automatically allocated to 0 using calloc)*/
     phi     = alloc_doublematrix(N, N);
     phi_new = alloc_doublematrix(N, N);
     rho     = alloc_doublematrix(N, N);
     Ex      = alloc_doublematrix(N, N);
     Ey      = alloc_doublematrix(N, N);
+
+
+
+    /*===================================================*/
+    /* 1D Decomposition into columns */
+    ncols = (int) N/nprocs;  /* number of columns for each proc */
+    rem = N%nprocs;          /* get the remainder of the division */
+
+    /* Every proc <= (rem-1) will get an extra column */
+    if( proc < rem ) {
+        ncols++;
+    }
+ 
+    /* Find the left starting index i (colum) for each processor */
+    /* and save it in the lpoint variable                        */ 
+    if( proc < rem ){
+        lpoint = (proc*ncols) + 1;
+    } else {
+        lpoint = (proc*ncols + rem) + 1;  
+    }
+
+    /* Find the right end index i (colum) for each processor */
+    /* and save it in the rpoint variable                    */  
+    rpoint = (lpoint + ncols) - 1;
+    /*===================================================*/
+
 
 
     /* CALCULATE THE CHARGE DENSITY RHO OF THE DOMAIN */
@@ -29,12 +82,16 @@ int main(int argc, char const *argv[])
     poisson(phi, phi_new, rho, h, N, iter_max);
 
     /* CALCULATE THE FIELD E */
-    calc_field(Ex, Ey, phi, h, N);
+    if (proc==0) {
+        calc_field(Ex, Ey, phi, h, N);
+    }
     
     /* WRITE DATA TO FILES */
-    write_matrix(phi, N, "Phi", "potential.dat", "w");
-    write_matrix(Ex, N, "Ex", "field.dat", "w");
-    write_matrix(Ey, N, "Ey", "field.dat", "a");
+    if (proc==0) {
+        write_matrix(phi, N, "Phi", "potential.dat", "w");
+        write_matrix(Ex, N, "Ex", "field.dat", "w");
+        write_matrix(Ey, N, "Ey", "field.dat", "a");
+    }
 
 
     /* FREE MEMORY */
@@ -43,6 +100,17 @@ int main(int argc, char const *argv[])
     free_matrix(rho);
     free_matrix(Ex);
     free_matrix(Ey);
+
+
+    /*===================================================*/
+    /* CALCULATE THE COMPUTATION TIME */
+    if(proc == 0){
+        t2 = MPI_Wtime();
+        printf("Used processors: %d, Time: %4.4f seconds\n", nprocs, (t2-t1) );
+    }
+    /* SHUT DOWN MPI*/
+    MPI_Finalize();
+    /*===================================================*/
 
     return 0;
 }
