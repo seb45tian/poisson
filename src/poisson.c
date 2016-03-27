@@ -5,12 +5,12 @@
 
 int proc;                   /* rank of the current process */
 int nprocs;                 /* total number of processes */
-int *ileft, *iright;        /* pointers for the boundariy values */
+int *itop, *ibottom;        /* pointers for the boundariy values */
 
 int main(int argc, char **argv)
 {
     /* VARIBALES */
-    int N = 500;                 // number of cells
+    int N = 51;                 // number of cells
     int iter_max = 1e4;         // number of maximum iterations
     double length = 1.0;        // side length of the domain
     double h = length/(N-1);    // grid spacing
@@ -20,15 +20,15 @@ int main(int argc, char **argv)
 
     /*===================================================*/
     /* ADDED VARIABLES FOR MPI */
-    int ncols;          /* The number of coulmns */
+    int nrows;          /* The number of coulmns */
     int rem;            /* remainder of integer division imax/nprocs */
-    int lpoint = 0;     /* stores the left column index for each proc*/
-    int rpoint = 0;     /* stores the right column index for each proc*/
+    int tpoint = 0;     /* stores the left column index for each proc*/
+    int bpoint = 0;     /* stores the right column index for each proc*/
     double t1, t2;
 
-    /* Initialization of pointers ileft and iright */
-    ileft = &lpoint;
-    iright = &rpoint; 
+    /* Initialization of pointers itop and ibottom */
+    itop = &tpoint;
+    ibottom = &bpoint; 
 
     /*===================================================*/
     /* INIT MPI*/
@@ -51,26 +51,26 @@ int main(int argc, char **argv)
 
 
     /*===================================================*/
-    /* 1D Decomposition into columns */
-    ncols = (int) N/nprocs;  /* number of columns for each proc */
+    /* 1D Decomposition into rows */
+    nrows = (int) N/nprocs;  /* number of rows for each proc */
     rem = N%nprocs;          /* get the remainder of the division */
 
     /* Every proc <= (rem-1) will get an extra column */
     if( proc < rem ) {
-        ncols++;
+        nrows++;
     }
  
     /* Find the left starting index i (colum) for each processor */
-    /* and save it in the lpoint variable                        */ 
+    /* and save it in the tpoint variable                        */ 
     if( proc < rem ){
-        lpoint = (proc*ncols);// + 1;
+        tpoint = (proc*nrows);// + 1;
     } else {
-        lpoint = (proc*ncols + rem);// + 1;  
+        tpoint = (proc*nrows + rem);// + 1;  
     }
 
     /* Find the right end index i (colum) for each processor */
-    /* and save it in the rpoint variable                    */  
-    rpoint = (lpoint + ncols);// - 1;
+    /* and save it in the bpoint variable                    */  
+    bpoint = (tpoint + nrows);// - 1;
     /*===================================================*/
 
 

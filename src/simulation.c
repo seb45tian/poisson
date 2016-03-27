@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <mpi.h>
+#include "alloc.h"
 
 /* Convergence criteria */
 #define eps 1e-06
@@ -15,7 +16,7 @@ double yneg = 0.7;
 /* Calculate kappa/pi here once (save some computation time) */
 const double kappa_div_pi = kappa/M_PI;
 
-extern int *ileft, *iright; /* pointers to the left and right column index */
+extern int *itop, *ibottom; /* pointers to the left and right column index */
 extern int nprocs, proc;    /* total number of processors and rank id */
 
 /*=======================================================================*/
@@ -79,32 +80,30 @@ void poisson(double **phi, double **phi_new, double **rho, double h, int N, int 
 
     /*===================================================*/
     MPI_Status status;      /* MPI status */
-    int ncols;              /* number of columns */
+    int nrows;              /* number of rows */
     int rem;                /* remainder of integer division */
 
-    int ncols_array[nprocs];        /* array holding the ncols of each proc */
-    int lpoint_array[nprocs];       /* array holding the lpoint of each proc */
+    int nrows_array[nprocs];        /* array holding the nrows of each proc */
+    int tpoint_array[nprocs];       /* array holding the tpoint of each proc */
     
-    /* GET THE CORRECT NUMBER OF COLUMNS AND REMAINDER */
-    ncols = N/nprocs;
+    /* GET THE CORRECT NUMBER OF ROWS AND REMAINDER */
+    nrows = N/nprocs;
     rem = N%nprocs;
     
-    /* Find the left starting column index of each proc and the number  */
-    /* of columns and store them in arrays lpoint_array and ncols_array */
-    /* Every proc needs to have this array for later use!               */
+    /* Find the top starting row index of each proc and the number   */
+    /* of rows and store them in arrays tpoint_array and nrows_array */
+    /* Every proc needs to have this array for later use!            */
     for(ip =0; ip < nprocs; ip++){
         if(ip < rem){
-            ncols_array[ip]  = ncols+1;
-            lpoint_array[ip] = ip*ncols_array[ip];
+            nrows_array[ip]  = nrows+1;
+            tpoint_array[ip] = ip*nrows_array[ip];
         } else {
-            ncols_array[ip]  = ncols;
-            lpoint_array[ip] = ip*ncols_array[ip] + rem;
+            nrows_array[ip]  = nrows;
+            tpoint_array[ip] = ip*nrows_array[ip] + rem;
         }
     }
-    int k;
-    for (k = 0; k < nprocs; k++){
-        printf("proc: %d, ncols: %d, lpoint: %d\n", k, ncols_array[k], lpoint_array[k]);
-    }
+    // printf("proc: %d, top-row: %d, bottom-row: %d\n", proc, *itop, *ibottom );
+
     /*===================================================*/
 
 
@@ -113,7 +112,7 @@ void poisson(double **phi, double **phi_new, double **rho, double h, int N, int 
 
 
     for(iter=0; iter<iter_max; iter++) {
-        for (i=*ileft;i<*iright;i++) {
+        for (i=*itop;i<*ibottom;i++) {
             for (j=0;j<N;j++) {
                 /* the normal case when at no boundary */
                 if (i!=0 && i!=N-1 && j!=0 && j!=N-1) {
@@ -156,26 +155,33 @@ void poisson(double **phi, double **phi_new, double **rho, double h, int N, int 
         } /*end of i*/
 
 
-        /*===================================================*/
-        /* WE HAVE TO SEND AND RECEIVE THE CORRECT BOUNDARIES */
-        /* TO THE PROC LEFT AND RIGHT FROM US (proc+1 or -1)  */
-        if( proc > 0 && proc < nprocs-1 && nprocs>1){  
-            MPI_Sendrecv(phi[*iright], N, MPI_DOUBLE, proc+1, 666, phi[*iright+1], N,
+        /*======================================================*/
+        /* WE HAVE TO SEND AND RECEIVE THE CORRECT BOUNDARIES   */
+        /* TO THE PROC ABOVE AND BENEATH FROM US (proc+1 or -1) */
+
+        /* if inner processor: send and receive top AND bottom boundary */
+        if( proc > 0 && proc < nprocs-1 && nprocs>1){ 
+            MPI_Sendrecv(phi_new[*ibottom-1], N, MPI_DOUBLE, proc+1, 666, phi_new[*ibottom], N,
                          MPI_DOUBLE, proc+1, 999, MPI_COMM_WORLD, &status);
-            MPI_Sendrecv(phi[*ileft], N, MPI_DOUBLE, proc-1, 999, phi[*ileft-1], N,
+            MPI_Sendrecv(phi_new[*itop], N, MPI_DOUBLE, proc-1, 999, phi_new[*itop-1], N,
                          MPI_DOUBLE, proc-1, 666, MPI_COMM_WORLD, &status);
+        /* if top or bottom boundary processor: only send and receive bottom OR top boundary */
         } else if (nprocs>1){
             if (proc == 0) {
-                MPI_Sendrecv(phi[*iright], N, MPI_DOUBLE, proc+1, 666, phi[*iright+1], N,
-                             MPI_DOUBLE, proc+1, 999, MPI_COMM_WORLD, &status);        
+                MPI_Sendrecv(phi_new[*ibottom-1], N, MPI_DOUBLE, proc+1, 666, phi_new[*ibottom], N,
+                             MPI_DOUBLE, proc+1, 999, MPI_COMM_WORLD, &status);
+                /* for the periodic boundary conditions */
+                MPI_Sendrecv(phi_new[*itop], N, MPI_DOUBLE, nprocs-1, 333, phi_new[N-1], N,
+                             MPI_DOUBLE, nprocs-1, 444, MPI_COMM_WORLD, &status);        
             } else {
-                MPI_Sendrecv(phi[*ileft], N, MPI_DOUBLE, proc-1, 999, phi[*ileft-1], N,
-                             MPI_DOUBLE, proc-1, 666,MPI_COMM_WORLD, &status);     
+                MPI_Sendrecv(phi_new[*itop], N, MPI_DOUBLE, proc-1, 999, phi_new[*itop-1], N,
+                             MPI_DOUBLE, proc-1, 666,MPI_COMM_WORLD, &status);
+                /* for the periodic boundary conditions */ 
+                MPI_Sendrecv(phi_new[*ibottom-1], N, MPI_DOUBLE, 0, 444, phi_new[0], N,
+                             MPI_DOUBLE, 0, 333, MPI_COMM_WORLD, &status);     
             }
         } 
         /*===================================================*/
-
-
 
         /* Break loop if convergence reached */
         // max_norm = get_max(phi,phi_new,N,N);
@@ -184,35 +190,35 @@ void poisson(double **phi, double **phi_new, double **rho, double h, int N, int 
         //     break;
         // }
 
-
-        /*===================================================*/
-        /* NOW WE COLLECT EVERYTHING ON PROC 0 */
-        if ( proc != 0 && nprocs>1){
-            /* If not proc 0 --> send data */
-            MPI_Send( phi[*ileft], ncols_array[proc]*N, MPI_DOUBLE, 0, 777, MPI_COMM_WORLD);
-        } else if (nprocs>1){
-            /* If proc 0 --> loop over all other procs and receive data */
-            for (ip = 1; ip < nprocs; ip++){
-                MPI_Recv(phi[lpoint_array[ip]], ncols_array[ip]*N, MPI_DOUBLE, ip, 777, MPI_COMM_WORLD, &status);
-            }
-        }
-             
-        /* BROADCAST p ARRAY TO ALL PROCS */
-        if (nprocs>1) {
-            MPI_Bcast( phi[0],N*N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-            /* WAIT UNTIL EVERYONE FINISHED */
-            MPI_Barrier(MPI_COMM_WORLD);
-        }
-        /*===================================================*/
-
-
-
-
         /* Don't copy data - just swap pointers around */
         phi_swap = phi;
         phi = phi_new;
         phi_new = phi_swap;
+
+
+
     } /*end iter*/
+
+    /*===================================================*/
+    /* NOW WE COLLECT EVERYTHING ON PROC 0 */
+    if ( proc != 0 && nprocs>1){
+        /* If not proc 0 --> send data */
+        MPI_Send( phi[*itop], nrows_array[proc]*N, MPI_DOUBLE, 0, 777, MPI_COMM_WORLD);
+    } else if (nprocs>1){
+        /* If proc 0 --> loop over all other procs and receive data */
+        for (ip = 1; ip < nprocs; ip++){
+            MPI_Recv(phi[tpoint_array[ip]], nrows_array[ip]*N, MPI_DOUBLE, ip, 777, MPI_COMM_WORLD, &status);
+        }
+    }
+         
+    /* BROADCAST p ARRAY TO ALL PROCS */
+    if (nprocs>1) {
+        MPI_Bcast( phi[0],N*N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        /* WAIT UNTIL EVERYONE FINISHED */
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+    /*===================================================*/
+
 }
 
 
