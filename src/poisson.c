@@ -1,6 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
 #include "alloc.h"
 #include "simulation.h"
 
@@ -9,8 +7,10 @@ int main(int argc, char const *argv[])
 {
     /* VARIBALES */
     int N = 51;                 // number of cells
+    int iter_max = 1e5;         // number of maximum iterations
     double length = 1.0;        // side length of the domain
     double h = length/(N-1);    // grid spacing
+
     /* Create data arrays */
     double **phi, **phi_new, **rho, **Ex, **Ey;
 
@@ -21,18 +21,21 @@ int main(int argc, char const *argv[])
     Ex      = alloc_doublematrix(N, N);
     Ey      = alloc_doublematrix(N, N);
 
+
     /* CALCULATE THE CHARGE DENSITY RHO OF THE DOMAIN */
     calc_density(rho,h,N);
 
     /* RUN THE POISSON CALCULATION */
-    poisson(phi, phi_new, rho, h, N);
+    poisson(phi, phi_new, rho, h, N, iter_max);
 
     /* CALCULATE THE FIELD E */
     calc_field(Ex, Ey, phi, h, N);
     
-    print_matrix(phi, N, N, "Phi");
-    // print_matrix(Ex, N, N, "Ex");
-    // print_matrix(Ey, N, N, "Ey");
+    /* WRITE DATA TO FILES */
+    write_matrix(phi, N, "Phi", "potential.dat", "w");
+    write_matrix(Ex, N, "Ex", "field.dat", "w");
+    write_matrix(Ey, N, "Ey", "field.dat", "a");
+
 
     /* FREE MEMORY */
     free_matrix(phi);

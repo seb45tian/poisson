@@ -1,10 +1,9 @@
 import numpy as np
 from matplotlib import use
-use("TkAgg")
+use("Agg")
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-# from matplotlib import cm #(best so for winter?)
-import colormaps as cm #(choose from plasma, inferno, magma or viridis)
+from matplotlib import cm
 
 # Grid
 N = 51; # Use an odd number to avoid singularity?
@@ -52,7 +51,7 @@ X, Y = np.meshgrid(x,y) # create a meshgrid from y and z coordinates!
 
 
 ##--- UNCOMMENT FOR 3D SURFACE PLOT! ----##
-fig = plt.figure(figsize=(10,5))
+fig = plt.figure(figsize=(10,8))
 ax = fig.add_subplot(1,1,1, projection="3d")
 ax.set_title('Potential Surface' , fontsize=18, fontweight='bold')
 
@@ -64,7 +63,8 @@ ax.set_zlabel(r"$\varphi$", fontsize=18)
 cb = fig.colorbar(surf, shrink=0.5, aspect=5)
 cb.set_label(label=r"$\varphi$",size=18)
 plt.tight_layout()
-plt.show()
+plt.savefig("potetential_surfaceplot_analytical.pdf")
+# plt.show()
 
 
 
@@ -77,17 +77,17 @@ plt.show()
 # Ey = Ey/np.sqrt(Ex**2+Ey**2)
 
 
-# fig = plt.figure(figsize=(10,8))
-# ax = fig.add_subplot(1,1,1)
-# ax.set_title('Field E with contourplot of potential' , fontsize=18, fontweight='bold')
-# surf = ax.contourf(X, Y, phi, rstride=1, cstride=1, linewidth=0, antialiased=True, cmap = cm.viridis)
-# field = ax.quiver(X, Y, Ex, Ey, pivot="middle")
+fig = plt.figure(figsize=(10,8))
+ax = fig.add_subplot(1,1,1)
+ax.set_title('Field E with contourplot of potential' , fontsize=18, fontweight='bold')
+surf = ax.contourf(X, Y, phi, rstride=1, cstride=1, linewidth=0, antialiased=True, cmap = cm.viridis)
+field = ax.quiver(X, Y, Ex, Ey, pivot="middle")
 
-# ax.set_xlabel("x", fontsize=18)
-# ax.set_ylabel("y", fontsize=18)
-# cb = fig.colorbar(surf, shrink=0.5, aspect=5)
-# cb.set_label(label=r"$\varphi$",size=18)
-# plt.tight_layout()
-
+ax.set_xlabel("x", fontsize=18)
+ax.set_ylabel("y", fontsize=18)
+cb = fig.colorbar(surf, shrink=0.5, aspect=5)
+cb.set_label(label=r"$\varphi$",size=18)
+plt.tight_layout()
+plt.savefig("field_contourplot_analytical.pdf")
 # plt.show()
 

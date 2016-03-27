@@ -1,6 +1,5 @@
-#include <math.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <math.h>
 
 /* Convergence criteria */
 #define eps 1e-06
@@ -66,10 +65,9 @@ double get_max(double **a, double **b, int Nx, int Ny) {
 /*=======================================================*/
 /* ITERATIVE POISSON FUNCTION TO CALCULATE THE POTENTIAL */
 /*=======================================================*/
-void poisson(double **phi, double **phi_new, double **rho, double h, int N) {
+void poisson(double **phi, double **phi_new, double **rho, double h, int N, int iter_max) {
     int i,j,iter;
     double max_norm;
-    int iter_max = 1e05;
     double hsq = h*h;
     double **phi_swap;
 
