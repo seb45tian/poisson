@@ -101,8 +101,8 @@ void poisson(double **phi, double **phi_new, double **rho, double h, int N, int 
             lpoint_array[ip] = ip*ncols_array[ip] + rem;
         }
     }
-    for (int k = 0; k < nprocs; k++)
-    {
+    int k;
+    for (k = 0; k < nprocs; k++){
         printf("proc: %d, ncols: %d, lpoint: %d\n", k, ncols_array[k], lpoint_array[k]);
     }
     /*===================================================*/
