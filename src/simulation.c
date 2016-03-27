@@ -22,7 +22,6 @@ extern int nprocs, proc;    /* total number of processors and rank id */
 /* FUNCTION TO CALCULATE THE SQUARED MAGNITUDE OF TWO VECTORS: |r1-r2|^2 */
 /*=======================================================================*/
 double magnitude_squared(double x1, double y1, double x2, double y2) {
-
     double xret = x1-x2;
     double yret = y1-y2; 
     return((xret*xret)+(yret*yret));
@@ -33,8 +32,9 @@ double magnitude_squared(double x1, double y1, double x2, double y2) {
 /* FUNCTION TO CALCULATE THE CHARGE DENSITY FOR A GIVEN DOMAIN */
 /*=============================================================*/
 void calc_density(double **rho, double h, int N) {
-    for (int i=0;i<N;i++) {
-        for (int j=0;j<N;j++) {
+    int i,j;
+    for (i=0;i<N;i++) {
+        for (j=0;j<N;j++) {
             rho[i][j] = kappa_div_pi * ( exp(-kappa*magnitude_squared(h*i,h*j,xpos,ypos)) 
                                     - exp(-kappa*magnitude_squared(h*i,h*j,xneg,yneg)) );
         }
@@ -55,9 +55,10 @@ double magnitude(double x1, double y1, double x2, double y2) {
 /* FUNCTION TO CALCULATE MAX NORM: max(|r1-r2|) */
 /*==============================================*/
 double get_max(double **a, double **b, int Nx, int Ny) {
+    int i,j;
     double max = 0.0;
-    for (int i=0;i<Nx;i++) {
-        for (int j=0;j<Ny;j++)
+    for (i=0;i<Nx;i++) {
+        for (j=0;j<Ny;j++)
             if (fabs(a[i][j]-b[i][j]) > max) {
                 max =  fabs(a[i][j]-b[i][j]);
             }
@@ -220,9 +221,10 @@ void poisson(double **phi, double **phi_new, double **rho, double h, int N, int 
 /* FUNCTION TO CALCULATE THE FIELD COMPONENTS Ex and Ey FOR A GIVEN DOMAIN */
 /*=========================================================================*/
 void calc_field(double **Ex, double **Ey, double **phi, double h, int N) {
+    int i,j;
     const double div2h = 1.0/(2*h);
-    for (int i=0;i<N;i++) {
-        for (int j=0;j<N;j++) {
+    for (i=0;i<N;i++) {
+        for (j=0;j<N;j++) {
             // normal case, inner points
             if (i!=0 && i!=N-1 && j!=0 && j!=N-1) {
                 Ex[i][j] = (phi[i+1][j]-phi[i-1][j])*div2h;
