@@ -5,6 +5,6 @@
 
 Author
 ------
-Sebastian Potthoff: <sebastian.potthoff@warwick.ac.uk>
+Sebastian Potthoff: <s.potthoff@warwick.ac.uk>
 
 University of Warwick, March 2016
