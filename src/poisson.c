@@ -10,8 +10,8 @@ int *ileft, *iright;        /* pointers for the boundariy values */
 int main(int argc, char **argv)
 {
     /* VARIBALES */
-    int N = 51;                 // number of cells
-    int iter_max = 1e5;         // number of maximum iterations
+    int N = 500;                 // number of cells
+    int iter_max = 1e4;         // number of maximum iterations
     double length = 1.0;        // side length of the domain
     double h = length/(N-1);    // grid spacing
 
@@ -63,14 +63,14 @@ int main(int argc, char **argv)
     /* Find the left starting index i (colum) for each processor */
     /* and save it in the lpoint variable                        */ 
     if( proc < rem ){
-        lpoint = (proc*ncols) + 1;
+        lpoint = (proc*ncols);// + 1;
     } else {
-        lpoint = (proc*ncols + rem) + 1;  
+        lpoint = (proc*ncols + rem);// + 1;  
     }
 
     /* Find the right end index i (colum) for each processor */
     /* and save it in the rpoint variable                    */  
-    rpoint = (lpoint + ncols) - 1;
+    rpoint = (lpoint + ncols);// - 1;
     /*===================================================*/
 
 
