@@ -18,7 +18,7 @@ E = np.loadtxt(field)
 # Print out the dimensions
 print("Grid: " + str(phi.shape[0]) + "x" + str(phi.shape[1]))
 N = phi.shape[0];
-phi=phi.T
+
 
 # Split E into its components Ex and Ey
 Ex = E[0:N,:]
