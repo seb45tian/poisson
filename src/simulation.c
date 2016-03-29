@@ -18,6 +18,7 @@ const double kappa_div_pi = kappa/M_PI;
 
 extern int *itop, *ibottom; /* pointers to the left and right column index */
 extern int nprocs, proc;    /* total number of processors and rank id */
+extern int force_iterations;
 
 /*=======================================================================*/
 /* FUNCTION TO CALCULATE THE SQUARED MAGNITUDE OF TWO VECTORS: |r1-r2|^2 */
@@ -55,14 +56,15 @@ double magnitude(double x1, double y1, double x2, double y2) {
 /*==============================================*/
 /* FUNCTION TO CALCULATE MAX NORM: max(|r1-r2|) */
 /*==============================================*/
-double get_max(double **a, double **b, int Nx, int Ny) {
+double get_max(double **a, double **b, int imin, int imax, int jmin, int jmax) {
     int i,j;
     double max = 0.0;
-    for (i=0;i<Nx;i++) {
-        for (j=0;j<Ny;j++)
+    for (i=imin; i<imax; i++) {
+        for (j=jmin; j<jmax; j++) {
             if (fabs(a[i][j]-b[i][j]) > max) {
                 max =  fabs(a[i][j]-b[i][j]);
             }
+        }
     }
     return(max);
 }
@@ -74,6 +76,7 @@ double get_max(double **a, double **b, int Nx, int Ny) {
 void poisson(double **phi, double **phi_new, double **rho, double h, int N, int iter_max) {
     int i,j,iter,ip;
     double max_norm;
+    double max_norm_total;
     double hsq = h*h;
     double **phi_swap;
 
@@ -102,8 +105,6 @@ void poisson(double **phi, double **phi_new, double **rho, double h, int N, int 
             tpoint_array[ip] = ip*nrows_array[ip] + rem;
         }
     }
-    // printf("proc: %d, top-row: %d, bottom-row: %d\n", proc, *itop, *ibottom );
-
     /*===================================================*/
 
 
@@ -159,60 +160,69 @@ void poisson(double **phi, double **phi_new, double **rho, double h, int N, int 
         /* WE HAVE TO SEND AND RECEIVE THE CORRECT BOUNDARIES   */
         /* TO THE PROC ABOVE AND BENEATH FROM US (proc+1 or -1) */
 
-        /* if inner processor: send and receive top AND bottom boundary */
-        if( proc > 0 && proc < nprocs-1 && nprocs>1){ 
-            MPI_Sendrecv(phi_new[*ibottom-1], N, MPI_DOUBLE, proc+1, 666, phi_new[*ibottom], N,
-                         MPI_DOUBLE, proc+1, 999, MPI_COMM_WORLD, &status);
-            MPI_Sendrecv(phi_new[*itop], N, MPI_DOUBLE, proc-1, 999, phi_new[*itop-1], N,
-                         MPI_DOUBLE, proc-1, 666, MPI_COMM_WORLD, &status);
-        /* if top or bottom boundary processor: only send and receive bottom OR top boundary */
-        } else if (nprocs>1){
-            if (proc == 0) {
+        if (nprocs > 1) {
+            /* If inner processor: send and receive top AND bottom boundary */
+            if( proc > 0 && proc < nprocs-1){ 
                 MPI_Sendrecv(phi_new[*ibottom-1], N, MPI_DOUBLE, proc+1, 666, phi_new[*ibottom], N,
                              MPI_DOUBLE, proc+1, 999, MPI_COMM_WORLD, &status);
-                /* for the periodic boundary conditions */
-                MPI_Sendrecv(phi_new[*itop], N, MPI_DOUBLE, nprocs-1, 333, phi_new[N-1], N,
-                             MPI_DOUBLE, nprocs-1, 444, MPI_COMM_WORLD, &status);        
-            } else {
                 MPI_Sendrecv(phi_new[*itop], N, MPI_DOUBLE, proc-1, 999, phi_new[*itop-1], N,
-                             MPI_DOUBLE, proc-1, 666,MPI_COMM_WORLD, &status);
-                /* for the periodic boundary conditions */ 
-                MPI_Sendrecv(phi_new[*ibottom-1], N, MPI_DOUBLE, 0, 444, phi_new[0], N,
-                             MPI_DOUBLE, 0, 333, MPI_COMM_WORLD, &status);     
-            }
-        } 
+                             MPI_DOUBLE, proc-1, 666, MPI_COMM_WORLD, &status);
+            /* If top or bottom boundary processor: only send and receive bottom OR top boundary */
+            } else {
+                if (proc == 0) {
+                    MPI_Sendrecv(phi_new[*ibottom-1], N, MPI_DOUBLE, proc+1, 666, phi_new[*ibottom], N,
+                                 MPI_DOUBLE, proc+1, 999, MPI_COMM_WORLD, &status);
+                    /* for the periodic boundary conditions */
+                    MPI_Sendrecv(phi_new[*itop], N, MPI_DOUBLE, nprocs-1, 333, phi_new[N-1], N,
+                                 MPI_DOUBLE, nprocs-1, 444, MPI_COMM_WORLD, &status);        
+                } else {
+                    MPI_Sendrecv(phi_new[*itop], N, MPI_DOUBLE, proc-1, 999, phi_new[*itop-1], N,
+                                 MPI_DOUBLE, proc-1, 666,MPI_COMM_WORLD, &status);
+                    /* for the periodic boundary conditions */ 
+                    MPI_Sendrecv(phi_new[*ibottom-1], N, MPI_DOUBLE, 0, 444, phi_new[0], N,
+                                 MPI_DOUBLE, 0, 333, MPI_COMM_WORLD, &status);     
+                }
+            } 
+        }
         /*===================================================*/
+        /* CHECKING FOR CONVERGENCE */
+        /*(Only if force_iterations is disabled)*/
+        if (force_iterations == 0) {
+            /* Calculate the local max-norm value */
+            max_norm = get_max(phi_new, phi, *itop, *ibottom, 0, N);
 
-        /* Break loop if convergence reached */
-        // max_norm = get_max(phi,phi_new,N,N);
-        // if (max_norm <= eps) {
-        //     //printf("# Iterations: %d\n", iter);
-        //     break;
-        // }
+            /* Get the maximum value of all max-norms */
+            MPI_Allreduce(&max_norm, &max_norm_total, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD );
+
+            /* Break loop if convergence reached */
+            if (max_norm_total <= eps) {
+                if (proc == 0) printf("# Reached convergence after %d iteration.\n", iter);
+                break;
+            }
+        }
+        /*===================================================*/
 
         /* Don't copy data - just swap pointers around */
         phi_swap = phi;
         phi = phi_new;
         phi_new = phi_swap;
 
-
-
     } /*end iter*/
 
     /*===================================================*/
     /* NOW WE COLLECT EVERYTHING ON PROC 0 */
-    if ( proc != 0 && nprocs>1){
-        /* If not proc 0 --> send data */
-        MPI_Send( phi[*itop], nrows_array[proc]*N, MPI_DOUBLE, 0, 777, MPI_COMM_WORLD);
-    } else if (nprocs>1){
-        /* If proc 0 --> loop over all other procs and receive data */
-        for (ip = 1; ip < nprocs; ip++){
-            MPI_Recv(phi[tpoint_array[ip]], nrows_array[ip]*N, MPI_DOUBLE, ip, 777, MPI_COMM_WORLD, &status);
+    if (nprocs > 1) {
+        if ( proc != 0){
+            /* If not proc 0 --> send data */
+            MPI_Send( phi[*itop], nrows_array[proc]*N, MPI_DOUBLE, 0, 777, MPI_COMM_WORLD);
+        } else if (nprocs>1){
+            /* If proc 0 --> loop over all other procs and receive data */
+            for (ip = 1; ip < nprocs; ip++){
+                MPI_Recv(phi[tpoint_array[ip]], nrows_array[ip]*N, MPI_DOUBLE, ip, 777, MPI_COMM_WORLD, &status);
+            }
         }
-    }
          
-    /* BROADCAST p ARRAY TO ALL PROCS */
-    if (nprocs>1) {
+        /* BROADCAST PHI ARRAY TO ALL PROCESSES */
         MPI_Bcast( phi[0],N*N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         /* WAIT UNTIL EVERYONE FINISHED */
         MPI_Barrier(MPI_COMM_WORLD);

@@ -16,7 +16,7 @@ phi = np.loadtxt(potential)
 E = np.loadtxt(field)
 
 # Print out the dimensions
-print("Grid: " + str(phi.shape[0]) + "x" + str(phi.shape[1]))
+print("# Grid: " + str(phi.shape[0]) + "x" + str(phi.shape[1]))
 N = phi.shape[0];
 
 
@@ -34,9 +34,10 @@ X, Y = np.meshgrid(x,y) # create a meshgrid from y and z coordinates!
 
 
 # Choose a colormap depending on version of matplotlib
-# (viridis is better but only available from 1.5.1 onwards)
+# (viridis is probably the nicest but only available from 1.5.1 onwards)
 if version == "1.5.1":
 	cmap = cm.viridis
+	# cmap = cm.afmhot
 else:
 	cmap = cm.afmhot
 
@@ -54,7 +55,7 @@ ax.set_zlabel(r"$\varphi$", fontsize=18)
 cb = fig.colorbar(surf, shrink=0.5, aspect=5)
 cb.set_label(label=r"$\varphi$",size=18)
 plt.tight_layout()
-plt.savefig("potetential_surfaceplot.pdf")
+plt.savefig("plot_potetential_surface.pdf")
 # plt.show()
 
 
@@ -73,6 +74,6 @@ cb = fig.colorbar(surf, shrink=0.5, aspect=5)
 cb.set_label(label=r"$\varphi$",size=18)
 plt.tight_layout()
 
-plt.savefig("field_contourplot.pdf")
+plt.savefig("plot_field_contour.pdf")
 # plt.show()
 

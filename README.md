@@ -1,6 +1,6 @@
 # poisson
 
-
+This program will perform an iterative calculation of the 2D poisson equation
 
 
 Author
