@@ -148,7 +148,7 @@ void poisson(double **phi, double **phi_new, double **rho, double h, int N, int 
                     phi_new[i][j] = 0.25*(phi[i+1-N][j] + phi[i-1][j] + phi[i][j+1] + phi[i][j-1+N] - hsq*rho[i][j]);
                 }
                 /* when at left-bottom corner */
-                else if (i==N-1 && j==0) {
+                else if (j==N-1 && i==0) {
                     phi_new[i][j] = 0.25*(phi[i+1][j] + phi[i-1+N][j] + phi[i][j+1-N] + phi[i][j-1] - hsq*rho[i][j]);
                 }
 
