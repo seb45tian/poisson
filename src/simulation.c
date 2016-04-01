@@ -158,7 +158,7 @@ void poisson(double **phi, double **phi_new, double **rho, double h, int N, int 
 
         /*======================================================*/
         /* WE HAVE TO SEND AND RECEIVE THE CORRECT BOUNDARIES   */
-        /* TO THE PROC ABOVE AND BENEATH FROM US (proc+1 or -1) */
+        /* TO THE PROC ABOVE AND BENEATH US (proc+1 or -1)      */
 
         if (nprocs > 1) {
             /* If inner processor: send and receive top AND bottom boundary */

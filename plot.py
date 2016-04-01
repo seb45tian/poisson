@@ -55,7 +55,7 @@ ax.set_zlabel(r"$\varphi$", fontsize=18)
 cb = fig.colorbar(surf, shrink=0.5, aspect=5)
 cb.set_label(label=r"$\varphi$",size=18)
 plt.tight_layout()
-plt.savefig("plot_potetential_surface.pdf")
+plt.savefig("plot_potetential_surface.png")
 # plt.show()
 
 
@@ -74,6 +74,6 @@ cb = fig.colorbar(surf, shrink=0.5, aspect=5)
 cb.set_label(label=r"$\varphi$",size=18)
 plt.tight_layout()
 
-plt.savefig("plot_field_contour.pdf")
+plt.savefig("plot_field_contour.png")
 # plt.show()
 
