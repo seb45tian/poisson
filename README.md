@@ -12,7 +12,7 @@ The python scripts require the matplotlib and numpy library.
 A normal run would lool like the following:
 
     $ make
-    $ ./poisson
+    $ mpirun -np 2 ./poisson
     $ python plot.py
 
 Author
