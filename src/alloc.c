@@ -34,10 +34,11 @@ void free_matrix(void *m) {
 /*=======================================*/
 /* Function to print 2D matrix to stdout */
 /*=======================================*/
-void print_matrix(double **data, int imax, int jmax, char *str) {    
+void print_matrix(double **data, int imax, int jmax, char *str) {  
+    int i,j;  
     printf("#-- %s --#\n", str);
-    for (int i=0; i<imax; i++) {
-        for (int j=0; j<jmax; j++) {
+    for (i=0; i<imax; i++) {
+        for (j=0; j<jmax; j++) {
             printf("%f ", data[i][j]);
         }
         printf("\n");
@@ -48,11 +49,12 @@ void print_matrix(double **data, int imax, int jmax, char *str) {
 /* Function to save 2D matrix to a file */
 /*======================================*/
 void write_matrix(double **data, int N, char *head, char *filename, char *mode) {
+    int i,j;
     FILE *pFile;
     pFile = fopen(filename, mode);
     fprintf(pFile, "#-- %s --#\n", head);
-    for (int i=0; i<N; i++) {
-        for (int j=0; j<N; j++) {
+    for (i=0; i<N; i++) {
+        for (j=0; j<N; j++) {
             fprintf(pFile, "%f ", data[i][j]);
         }
         fprintf(pFile,"\n");
