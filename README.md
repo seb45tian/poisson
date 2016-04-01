@@ -9,6 +9,8 @@ A Makefile is provided using the mpicc compiler which outputs a poisson binary.
 
 The python scripts require the matplotlib and numpy library.
 
+A normal run would lool like the following:
+
     $ make
     $ ./poisson
     $ python plot.py
