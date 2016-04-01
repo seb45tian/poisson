@@ -7,10 +7,10 @@ Usage
 ------
 A Makefile is provided using the mpicc compiler which outputs a poisson binary.
 
-The python script require the matplotlib and numpy library.
+The python scripts require the matplotlib and numpy library.
 
 Author
 ------
 Sebastian Potthoff: <s.potthoff@warwick.ac.uk>
 
-University of Warwick, March 2016
+University of Warwick, April 2016
