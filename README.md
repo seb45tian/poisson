@@ -5,8 +5,9 @@ Two python scripts are provided for visualising the potential and field (plot.py
 
 Usage
 ------
-A Makefile is provided using the mpicc compiler which outputs a poisson binary:
-    make
+A Makefile is provided using the mpicc compiler which outputs a poisson binary.
+
+The python script require the matplotlib and numpy library.
 
 Author
 ------
